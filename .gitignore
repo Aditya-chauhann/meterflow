@@ -1,0 +1,23 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyc-314
+
+# Redis
+dump.rdb
+*.rdb
+Redis-x64-5.0.14.1/
+
+# Node
+node_modules/
+frontend/node_modules/
+
+# Environment
+.env
+*.env
+
+# OS
+.DS_Store
+Thumbs.db
