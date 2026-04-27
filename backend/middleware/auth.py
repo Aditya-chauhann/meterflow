@@ -1,17 +1,17 @@
 from fastapi import Request, HTTPException
 from services.api_key import validate_api_key
 
-SKIP_PATHS = ["/", "/keys/generate"]
-
 async def api_key_middleware(request: Request, call_next):
     if request.method == "OPTIONS":
         return await call_next(request)
     
-    if request.url.path in SKIP_PATHS:
+    if request.url.path == "/":
         return await call_next(request)
-    
-    # Skip revoke route
-    if request.url.path.startswith("/keys/revoke"):
+
+    if request.url.path.startswith("/auth"):
+        return await call_next(request)
+
+    if request.url.path.startswith("/keys"):
         return await call_next(request)
     
     api_key = request.headers.get("x-api-key")

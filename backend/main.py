@@ -6,6 +6,7 @@ from routes.keys import router as keys_router
 from routes.billing import router as billing_router
 from routes.analytics import router as analytics_router
 from services.usage_logger import log_request
+from routes.auth import router as auth_router
 import time
 
 app = FastAPI()
@@ -26,6 +27,7 @@ app.middleware("http")(rate_limit_middleware)
 app.include_router(keys_router)
 app.include_router(billing_router)
 app.include_router(analytics_router)
+app.include_router(auth_router)
 
 @app.middleware("http")
 async def usage_logging_middleware(request: Request, call_next):

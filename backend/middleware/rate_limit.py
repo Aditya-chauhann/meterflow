@@ -6,17 +6,23 @@ r = redis.Redis(host='localhost', port=6379, db=0)
 
 LIMIT = 5
 WINDOW = 60
-SKIP_PATHS = ["/", "/keys/generate"]
 
 async def rate_limit_middleware(request: Request, call_next):
     if request.method == "OPTIONS":
         return await call_next(request)
     
-    if request.url.path in SKIP_PATHS:
+    if request.url.path == "/":
         return await call_next(request)
 
-    # Skip revoke route
+    # Skip auth routes
+    if request.url.path.startswith("/auth"):
+        return await call_next(request)
+
+    # Skip revoke + generate
     if request.url.path.startswith("/keys/revoke"):
+        return await call_next(request)
+
+    if request.url.path.startswith("/keys/generate"):
         return await call_next(request)
     
     api_key = request.headers.get("x-api-key")
