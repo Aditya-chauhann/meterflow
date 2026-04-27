@@ -9,11 +9,14 @@ WINDOW = 60
 SKIP_PATHS = ["/", "/keys/generate"]
 
 async def rate_limit_middleware(request: Request, call_next):
-    # Skip OPTIONS requests (CORS preflight)
     if request.method == "OPTIONS":
         return await call_next(request)
     
     if request.url.path in SKIP_PATHS:
+        return await call_next(request)
+
+    # Skip revoke route
+    if request.url.path.startswith("/keys/revoke"):
         return await call_next(request)
     
     api_key = request.headers.get("x-api-key")

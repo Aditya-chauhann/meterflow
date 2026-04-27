@@ -32,11 +32,15 @@ async def usage_logging_middleware(request: Request, call_next):
     if request.url.path == "/":
         return await call_next(request)
     start = time.time()
-    response = await call_next(request)
-    duration_ms = (time.time() - start) * 1000
-    api_key = request.headers.get("x-api-key", "unknown")
-    log_request(api_key, request.url.path, response.status_code, duration_ms)
-    return response
+    try:
+        response = await call_next(request)
+        duration_ms = (time.time() - start) * 1000
+        api_key = request.headers.get("x-api-key", "unknown")
+        log_request(api_key, request.url.path, response.status_code, duration_ms)
+        return response
+    except Exception:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=401, content={"detail": "Invalid API Key"})
 
 @app.get("/")
 def home():
