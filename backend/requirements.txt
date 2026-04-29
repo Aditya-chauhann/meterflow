@@ -1,3 +1,4 @@
+# deps v2
 fastapi==0.110.0
 uvicorn==0.27.0
 pymongo==4.6.0
