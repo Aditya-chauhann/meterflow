@@ -25,6 +25,9 @@ async def rate_limit_middleware(request: Request, call_next):
     if request.url.path.startswith("/keys/generate"):
         return await call_next(request)
     
+    if request.url.path.startswith("/payment"):
+        return await call_next(request)
+    
     api_key = request.headers.get("x-api-key")
     if not api_key:
         return JSONResponse(status_code=401, content={"detail": "API key missing"})

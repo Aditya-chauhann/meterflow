@@ -7,11 +7,11 @@ async def api_key_middleware(request: Request, call_next):
     
     if request.url.path == "/":
         return await call_next(request)
-
     if request.url.path.startswith("/auth"):
         return await call_next(request)
-
     if request.url.path.startswith("/keys"):
+        return await call_next(request)
+    if request.url.path.startswith("/payment"):
         return await call_next(request)
     
     api_key = request.headers.get("x-api-key")

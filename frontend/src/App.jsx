@@ -205,11 +205,12 @@ const StatCard = ({ label, value, sub, accent, loading, delay = 0 }) => (
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 const Sidebar = ({ active, setActive, user, onLogout }) => {
   const links = [
-    { id: "overview", label: "Overview", icon: Icons.dashboard },
-    { id: "keys", label: "API Keys", icon: Icons.key },
-    { id: "analytics", label: "Analytics", icon: Icons.analytics },
-    { id: "billing", label: "Billing", icon: Icons.billing },
-  ];
+  { id: "overview", label: "Overview", icon: Icons.dashboard },
+  { id: "keys", label: "API Keys", icon: Icons.key },
+  { id: "analytics", label: "Analytics", icon: Icons.analytics },
+  { id: "billing", label: "Billing", icon: Icons.billing },
+  { id: "payment", label: "Payments", icon: Icons.zap },
+];
 
   return (
     <aside style={{ width: 220, minHeight: "100vh", background: COLORS.surface, borderRight: `1px solid ${COLORS.border}`, display: "flex", flexDirection: "column", position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 10 }}>
@@ -595,7 +596,123 @@ const Billing = ({ notify }) => {
     </div>
   );
 };
+const Payment = ({ user, notify }) => {
+  const [userId, setUserId] = useState(user?.email || "");
+  const [amount, setAmount] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [history, setHistory] = useState([]);
 
+  const fetchHistory = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/payment/history/${userId}`);
+      const data = await res.json();
+      setHistory(data);
+    } catch { }
+  };
+
+  const handlePay = async () => {
+    if (!userId || !amount) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/payment/create-order`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId, amount_usd: parseFloat(amount) })
+      });
+      const order = await res.json();
+
+      const options = {
+        key: order.key_id,
+        amount: order.amount_paise,
+        currency: order.currency,
+        name: "MeterFlow",
+        description: "API Usage Payment",
+        order_id: order.order_id,
+        handler: async (response) => {
+          const verify = await fetch(`${API_BASE}/payment/verify`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              order_id: response.razorpay_order_id,
+              payment_id: response.razorpay_payment_id,
+              signature: response.razorpay_signature
+            })
+          });
+          const result = await verify.json();
+          if (result.success) {
+            notify("Payment successful!", "success");
+            fetchHistory();
+          } else {
+            notify("Payment verification failed", "error");
+          }
+        },
+        prefill: { email: userId },
+        theme: { color: "#00ff87" }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch {
+      notify("Failed to create order", "error");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div>
+      <div style={{ marginBottom: 32 }}>
+        <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 26, letterSpacing: "-0.02em", marginBottom: 4 }}>Payments</h1>
+        <p style={{ color: COLORS.textSecondary, fontSize: 13 }}>Pay your API usage bill via Razorpay</p>
+      </div>
+
+      <div className="card fade-up-1" style={{ padding: "28px", marginBottom: 20, borderColor: COLORS.accentMid }}>
+        <p style={{ fontWeight: 500, fontSize: 14, marginBottom: 20 }}>Make a Payment</p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 10 }}>
+          <div>
+            <label style={{ fontSize: 11, color: COLORS.textSecondary, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>User ID / Email</label>
+            <input className="text-input" placeholder="aditya@gmail.com" value={userId} onChange={e => setUserId(e.target.value)} />
+          </div>
+          <div>
+            <label style={{ fontSize: 11, color: COLORS.textSecondary, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>Amount (USD)</label>
+            <input className="text-input" placeholder="0.05" type="number" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} />
+          </div>
+          <div style={{ display: "flex", alignItems: "flex-end" }}>
+            <button className="action-btn" onClick={handlePay} disabled={loading || !userId || !amount}>
+              <Icon d={Icons.zap} size={14} color="#000" />
+              {loading ? "Loading..." : "Pay Now"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="card fade-up-2" style={{ padding: "24px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <p style={{ fontWeight: 500, fontSize: 14 }}>Payment History</p>
+          <button className="ghost-btn" onClick={fetchHistory} style={{ fontSize: 12, padding: "6px 12px" }}>Refresh</button>
+        </div>
+        {history.length === 0 ? (
+          <div style={{ padding: "32px", textAlign: "center", color: COLORS.textTertiary, fontSize: 13 }}>No payments yet — click Refresh after making a payment</div>
+        ) : (
+          <div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 100px 80px", padding: "10px 0", borderBottom: `1px solid ${COLORS.border}`, marginBottom: 8 }}>
+              {["Order ID", "Amount", "INR", "Status"].map(h => (
+                <span key={h} style={{ fontSize: 11, color: COLORS.textTertiary, textTransform: "uppercase", letterSpacing: "0.08em" }}>{h}</span>
+              ))}
+            </div>
+            {history.map((p, i) => (
+              <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 80px 100px 80px", padding: "12px 0", borderBottom: i < history.length - 1 ? `1px solid ${COLORS.border}` : "none", alignItems: "center" }}>
+                <span style={{ fontSize: 11, fontFamily: COLORS.mono, color: COLORS.textSecondary }}>{p.order_id}</span>
+                <span style={{ fontSize: 13, fontFamily: COLORS.mono }}>${p.amount_usd}</span>
+                <span style={{ fontSize: 13, fontFamily: COLORS.mono }}>₹{(p.amount_paise / 100).toFixed(2)}</span>
+                <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 4, background: p.status === "paid" ? COLORS.accentDim : COLORS.amberDim, color: p.status === "paid" ? COLORS.accent : COLORS.amber }}>{p.status}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 // ─── App Root ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [page, setPage] = useState("overview");
@@ -647,6 +764,7 @@ export default function App() {
           {page === "keys" && <ApiKeys notify={notify} />}
           {page === "analytics" && <Analytics notify={notify} />}
           {page === "billing" && <Billing notify={notify} />}
+          {page === "payment" && <Payment user={user} notify={notify} />}
         </main>
       </div>
     </>

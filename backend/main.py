@@ -7,6 +7,8 @@ from routes.billing import router as billing_router
 from routes.analytics import router as analytics_router
 from services.usage_logger import log_request
 from routes.auth import router as auth_router
+from routes.payment import router as payment_router
+
 import time
 
 app = FastAPI()
@@ -28,11 +30,18 @@ app.include_router(keys_router)
 app.include_router(billing_router)
 app.include_router(analytics_router)
 app.include_router(auth_router)
+app.include_router(payment_router)
+
 
 @app.middleware("http")
 async def usage_logging_middleware(request: Request, call_next):
     if request.url.path == "/":
         return await call_next(request)
+    
+    # Skip auth and payment routes from logging
+    if request.url.path.startswith("/auth") or request.url.path.startswith("/payment"):
+        return await call_next(request)
+    
     start = time.time()
     try:
         response = await call_next(request)
