@@ -1,7 +1,7 @@
 from pymongo import MongoClient
+import os
 
-MONGO_URI = "mongodb+srv://aditya:Aditya%401@cluster0.qwhr1bn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-
+MONGO_URI = os.getenv("MONGO_URI")
 client = MongoClient(MONGO_URI)
 db = client["meterflow"]
 
