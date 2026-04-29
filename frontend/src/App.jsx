@@ -4,7 +4,7 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer
 } from "recharts";
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "https://meterflow-production.up.railway.app";
 
 const COLORS = {
   bg: "#080808", surface: "#0f0f0f", card: "#141414",
