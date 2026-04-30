@@ -1,12 +1,11 @@
-# deps v2
 fastapi==0.110.0
 uvicorn==0.27.0
 pymongo==4.6.0
 redis==5.0.1
-python-jose[cryptography]==3.3.0
+python-jose==3.3.0
 cryptography==42.0.0
 passlib==1.7.4
-bcrypt==3.2.2
+bcrypt==4.0.1
 python-multipart==0.0.9
 razorpay==1.3.0
-setuptools>=69.0.0
+setuptools==69.5.1
