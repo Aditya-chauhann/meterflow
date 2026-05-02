@@ -105,9 +105,13 @@ const AuthPage = ({ onLogin }) => {
   const [tab, setTab] = useState("login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  
+  // SEPARATE states for login and signup
+  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
+  const [signupForm, setSignupForm] = useState({ name: "", email: "", password: "", role: "user" });
 
-  const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const updateLogin = (k, v) => setLoginForm(f => ({ ...f, [k]: v }));
+  const updateSignup = (k, v) => setSignupForm(f => ({ ...f, [k]: v }));
 
   const handleSubmit = async () => {
     setError("");
@@ -115,8 +119,8 @@ const AuthPage = ({ onLogin }) => {
     try {
       const url = tab === "login" ? `${API_BASE}/auth/login` : `${API_BASE}/auth/signup`;
       const body = tab === "login"
-        ? { email: form.email, password: form.password }
-        : { name: form.name, email: form.email, password: form.password };
+        ? { email: loginForm.email, password: loginForm.password }
+        : { name: signupForm.name, email: signupForm.email, password: signupForm.password, role: signupForm.role };
 
       const res = await fetch(url, {
         method: "POST",
@@ -126,8 +130,9 @@ const AuthPage = ({ onLogin }) => {
       const data = await res.json();
       if (!res.ok) { setError(data.detail || "Something went wrong"); setLoading(false); return; }
       localStorage.setItem("mf_token", data.token);
-      localStorage.setItem("mf_name", data.name || form.name);
-      localStorage.setItem("mf_email", data.email || form.email);
+      localStorage.setItem("mf_name", data.name || signupForm.name);
+      localStorage.setItem("mf_email", data.email || loginForm.email);
+      localStorage.setItem("mf_role", data.role || signupForm.role);
       onLogin(data);
     } catch {
       setError("Cannot connect to server — is the backend running?");
@@ -155,31 +160,73 @@ const AuthPage = ({ onLogin }) => {
           <button className={`auth-tab ${tab === "signup" ? "active" : ""}`} onClick={() => { setTab("signup"); setError(""); }}>Create Account</button>
         </div>
 
-        {/* Form */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {tab === "signup" && (
+        {/* LOGIN FORM */}
+        {tab === "login" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div>
+              <label style={{ fontSize: 11, color: COLORS.textSecondary, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>Email</label>
+              <input className="text-input" type="email" placeholder="you@example.com" value={loginForm.email} onChange={e => updateLogin("email", e.target.value)} />
+            </div>
+            <div>
+              <label style={{ fontSize: 11, color: COLORS.textSecondary, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>Password</label>
+              <input className="text-input" type="password" placeholder="••••••••" value={loginForm.password} onChange={e => updateLogin("password", e.target.value)} onKeyDown={e => e.key === "Enter" && handleSubmit()} />
+            </div>
+            {error && <div style={{ padding: "10px 14px", background: "#ff4d4d11", border: "1px solid #ff4d4d44", borderRadius: 8, fontSize: 12, color: COLORS.red }}>{error}</div>}
+            <button className="action-btn" onClick={handleSubmit} disabled={loading} style={{ width: "100%", marginTop: 4 }}>
+              {loading ? "Please wait..." : "Sign In"}
+            </button>
+          </div>
+        )}
+
+        {/* SIGNUP FORM */}
+        {tab === "signup" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
               <label style={{ fontSize: 11, color: COLORS.textSecondary, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>Full Name</label>
-              <input className="text-input" placeholder="Aditya" value={form.name} onChange={e => update("name", e.target.value)} />
+              <input className="text-input" placeholder="Aditya" value={signupForm.name} onChange={e => updateSignup("name", e.target.value)} />
             </div>
-          )}
-          <div>
-            <label style={{ fontSize: 11, color: COLORS.textSecondary, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>Email</label>
-            <input className="text-input" type="email" placeholder="you@example.com" value={form.email} onChange={e => update("email", e.target.value)} />
-          </div>
-          <div>
-            <label style={{ fontSize: 11, color: COLORS.textSecondary, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>Password</label>
-            <input className="text-input" type="password" placeholder="••••••••" value={form.password} onChange={e => update("password", e.target.value)} onKeyDown={e => e.key === "Enter" && handleSubmit()} />
-          </div>
+            <div>
+              <label style={{ fontSize: 11, color: COLORS.textSecondary, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>Email</label>
+              <input className="text-input" type="email" placeholder="you@example.com" value={signupForm.email} onChange={e => updateSignup("email", e.target.value)} />
+            </div>
+            <div>
+              <label style={{ fontSize: 11, color: COLORS.textSecondary, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>Password</label>
+              <input className="text-input" type="password" placeholder="••••••••" value={signupForm.password} onChange={e => updateSignup("password", e.target.value)} />
+            </div>
+            {/* ROLE SELECTION */}
+            <div>
+              <label style={{ fontSize: 11, color: COLORS.textSecondary, display: "block", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>I am a...</label>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                {[
+                  { value: "user", label: "User", desc: "Consume APIs" },
+                  { value: "api_owner", label: "API Owner", desc: "Build & sell APIs" },
+                  { value: "admin", label: "Admin", desc: "Manage platform" },
+                ].map(role => (
+                  <div
+                    key={role.value}
+                    onClick={() => updateSignup("role", role.value)}
+                    style={{
+                      padding: "10px 12px",
+                      borderRadius: 8,
+                      border: `1px solid ${signupForm.role === role.value ? COLORS.accent : COLORS.border}`,
+                      background: signupForm.role === role.value ? COLORS.accentDim : "#0a0a0a",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    <p style={{ fontSize: 12, fontWeight: 500, color: signupForm.role === role.value ? COLORS.accent : COLORS.textPrimary, marginBottom: 2 }}>{role.label}</p>
+                    <p style={{ fontSize: 10, color: COLORS.textSecondary }}>{role.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-          {error && (
-            <div style={{ padding: "10px 14px", background: "#ff4d4d11", border: "1px solid #ff4d4d44", borderRadius: 8, fontSize: 12, color: COLORS.red }}>{error}</div>
-          )}
-
-          <button className="action-btn" onClick={handleSubmit} disabled={loading} style={{ width: "100%", marginTop: 4 }}>
-            {loading ? "Please wait..." : tab === "login" ? "Sign In" : "Create Account"}
-          </button>
-        </div>
+            {error && <div style={{ padding: "10px 14px", background: "#ff4d4d11", border: "1px solid #ff4d4d44", borderRadius: 8, fontSize: 12, color: COLORS.red }}>{error}</div>}
+            <button className="action-btn" onClick={handleSubmit} disabled={loading} style={{ width: "100%", marginTop: 4 }}>
+              {loading ? "Please wait..." : "Create Account"}
+            </button>
+          </div>
+        )}
 
         <div className="divider" />
         <p style={{ fontSize: 11, color: COLORS.textTertiary, textAlign: "center" }}>

@@ -36,7 +36,7 @@ def decode_token(token: str):
 def get_user_by_email(email: str):
     return users_collection.find_one({"email": email})
 
-def create_user(email: str, password: str, name: str):
+def create_user(email: str, password: str, name: str, role: str = "user"):
     if get_user_by_email(email):
         return None
     user = {
@@ -44,7 +44,7 @@ def create_user(email: str, password: str, name: str):
         "password": hash_password(password),
         "name": name,
         "created_at": datetime.utcnow(),
-        "role": "user"
+        "role": role
     }
     result = users_collection.insert_one(user)
     return str(result.inserted_id)

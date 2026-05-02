@@ -11,6 +11,7 @@ class SignupRequest(BaseModel):
     name: str
     email: str
     password: str
+    role: str = "user"
 
 class LoginRequest(BaseModel):
     email: str
@@ -18,7 +19,7 @@ class LoginRequest(BaseModel):
 
 @router.post("/signup")
 def signup(body: SignupRequest):
-    user_id = create_user(body.email, body.password, body.name)
+    user_id = create_user(body.email, body.password, body.name, body.role)
     if not user_id:
         raise HTTPException(status_code=400, detail="Email already exists")
     token = create_access_token({"email": body.email, "name": body.name})
