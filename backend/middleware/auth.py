@@ -1,4 +1,5 @@
-from fastapi import Request, HTTPException
+from fastapi import Request
+from fastapi.responses import JSONResponse
 from services.api_key import validate_api_key
 
 async def api_key_middleware(request: Request, call_next):
@@ -16,7 +17,11 @@ async def api_key_middleware(request: Request, call_next):
     
     api_key = request.headers.get("x-api-key")
     if not api_key or not validate_api_key(api_key):
-        raise HTTPException(status_code=401, detail="Invalid API Key")
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Invalid API Key"},
+            headers={"Access-Control-Allow-Origin": "https://meterflow-drab.vercel.app"}
+        )
     
     response = await call_next(request)
     return response
