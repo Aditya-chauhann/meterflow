@@ -16,15 +16,25 @@ app = FastAPI()
 # CORS — allow React dev server
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://meterflow-drab.vercel.app"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # ORDER IMPORTANT
-app.middleware("http")(api_key_middleware)
-app.middleware("http")(rate_limit_middleware)
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    # Let CORS preflight through
+    if request.method == "OPTIONS":
+        return await call_next(request)
+    return await api_key_middleware(request, call_next)
+
+@app.middleware("http")  
+async def rate_middleware(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return await call_next(request)
+    return await rate_limit_middleware(request, call_next)
 
 app.include_router(keys_router)
 app.include_router(billing_router)
